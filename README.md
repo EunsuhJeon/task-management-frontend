@@ -1,70 +1,92 @@
-# Getting Started with Create React App
+# task-management-frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React client for the Team Task Management SaaS (Taskflow).
 
-## Available Scripts
+## Stack
 
-In the project directory, you can run:
+- React 19 (Create React App)
+- React Router
+- Axios + JWT in `localStorage`
+- `@dnd-kit` kanban drag-and-drop
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- Signup / login / protected routes
+- Team create, invite link accept, sidebar team list
+- Kanban board (`TODO` / `DOING` / `DONE`) with drag-and-drop
+- Task CRUD, assignee, due-date badges & alerts
+- Comments on tasks
+- Profile name update
+- Admin-only task delete + invite creation
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Local setup
 
-### `npm test`
+1. Backend running at `http://localhost:8080` (see backend README).
+2. Install & start:
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+npm install
+cp .env.example .env   # if needed
+npm start
+```
 
-### `npm run build`
+App: `http://localhost:3000`
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Environment
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+| Variable | Description |
+|----------|-------------|
+| `REACT_APP_API_URL` | Backend base URL (no trailing slash) |
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+`.env.example`:
 
-### `npm run eject`
+```
+REACT_APP_API_URL=http://localhost:8080
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Demo login (with backend seed)
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```
+admin@demo.com / password123
+member@demo.com / password123
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Enable seed on backend: `APP_SEED_ENABLED=true`
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Scripts
 
-## Learn More
+| Command | Description |
+|---------|-------------|
+| `npm start` | Dev server |
+| `npm run build` | Production build → `build/` |
+| `npm test` | CRA tests |
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Project structure
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+src/
+  api/          Axios client + domain APIs
+  auth/         AuthContext, route guards
+  components/   Task modal, comments, kanban cards
+  layout/       App shell (sidebar + topbar)
+  pages/        Login, Signup, Overview, Board, Profile, Invite
+  utils/        task form + due-date helpers
+```
 
-### Code Splitting
+## Deploy (Vercel)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+1. Import this repo in Vercel.
+2. Framework preset: **Create React App**.
+3. Environment variable:
+   - `REACT_APP_API_URL` = your Render backend URL  
+     e.g. `https://task-management-backend.onrender.com`
+4. Deploy.
+5. Copy the Vercel URL into backend `CORS_ALLOWED_ORIGINS`.
 
-### Analyzing the Bundle Size
+`vercel.json` rewrites SPA routes to `index.html`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## Pairing with backend
 
-### Making a Progressive Web App
+Interview talking point:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+> I built a team-based task management system with role-based access control and RESTful APIs using Spring Boot, and a React client with JWT auth and a drag-and-drop kanban board.

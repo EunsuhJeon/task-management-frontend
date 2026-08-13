@@ -1,8 +1,11 @@
+import { DndContext, DragOverlay, PointerSensor, closestCenter, useSensor, useSensors } from '@dnd-kit/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useOutletContext, useParams } from 'react-router-dom';
+import { KanbanColumn, TaskCard } from '../components/KanbanBoard';
 import TaskFormModal from '../components/TaskFormModal';
 import { createTask, deleteTask, listTasks, updateTask } from '../api/tasks';
 import { createTeamInvite, getTeam, listTeamMembers } from '../api/teams';
+import { collectDueAlerts } from '../utils/dueDate';
 import {
   TASK_STATUSES,
   emptyTaskForm,
@@ -22,6 +25,7 @@ export default function TeamBoardPage() {
   const [inviteLink, setInviteLink] = useState('');
   const [inviteError, setInviteError] = useState('');
   const [inviteBusy, setInviteBusy] = useState(false);
+  const [activeTask, setActiveTask] = useState(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState('create');
@@ -31,6 +35,7 @@ export default function TeamBoardPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const isAdmin = team?.myRole === 'ADMIN';
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const loadBoard = useCallback(async () => {
     setLoading(true);
@@ -77,6 +82,8 @@ export default function TeamBoardPage() {
     return grouped;
   }, [tasks]);
 
+  const dueAlerts = useMemo(() => collectDueAlerts(tasks), [tasks]);
+
   function openCreateModal() {
     setModalMode('create');
     setEditingTask(null);
@@ -111,8 +118,11 @@ export default function TeamBoardPage() {
       } else {
         const updated = await updateTask(teamId, editingTask.id, payload);
         setTasks((prev) => prev.map((task) => (task.id === updated.id ? updated : task)));
+        setEditingTask(updated);
       }
-      closeModal();
+      if (modalMode === 'create') {
+        closeModal();
+      }
     } catch (err) {
       setFormError(err.message);
     } finally {
@@ -164,6 +174,29 @@ export default function TeamBoardPage() {
     }
   }
 
+  function handleDragStart(event) {
+    const task = event.active.data.current?.task;
+    setActiveTask(task || null);
+  }
+
+  async function handleDragEnd(event) {
+    setActiveTask(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const taskId = Number(active.id);
+    const task = tasks.find((item) => item.id === taskId);
+    if (!task) return;
+
+    const overId = String(over.id);
+    const nextStatus = TASK_STATUSES.some((status) => status.key === overId)
+      ? overId
+      : tasks.find((item) => String(item.id) === overId)?.status;
+
+    if (!nextStatus || task.status === nextStatus) return;
+    await handleStatusChange(task, nextStatus);
+  }
+
   if (loading) {
     return (
       <div className="stack">
@@ -211,73 +244,68 @@ export default function TeamBoardPage() {
         </div>
       </section>
 
+      {dueAlerts.length > 0 && (
+        <section className="panel alert-banner">
+          <h2>Due alerts</h2>
+          <ul className="alert-list">
+            {dueAlerts.map((alert) => (
+              <li key={alert.id} className={`alert-item alert-${alert.kind}`}>
+                <strong>{alert.title}</strong>
+                <span>{alert.label}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {error && <p className="error-text">{error}</p>}
       {inviteError && <p className="error-text">{inviteError}</p>}
       {inviteLink && (
         <section className="panel invite-banner">
-          <p>
-            Invite link copied. Share this with teammates:
-          </p>
+          <p>Invite link copied. Share this with teammates:</p>
           <code>{inviteLink}</code>
         </section>
       )}
 
-      <section className="kanban">
-        {TASK_STATUSES.map((column) => (
-          <div key={column.key} className="kanban-column">
-            <div className="kanban-column-header">
-              <h2>{column.label}</h2>
-              <span className="count-chip">{tasksByStatus[column.key].length}</span>
-            </div>
-            <div className="kanban-list">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
+        <section className="kanban">
+          {TASK_STATUSES.map((column) => (
+            <KanbanColumn
+              key={column.key}
+              statusKey={column.key}
+              label={column.label}
+              count={tasksByStatus[column.key].length}
+            >
               {tasksByStatus[column.key].map((task) => (
-                <article key={task.id} className="task-card">
-                  <button
-                    type="button"
-                    className="task-card-main"
-                    onClick={() => openEditModal(task)}
-                  >
-                    <strong>{task.title}</strong>
-                    {task.description && <p className="muted small">{task.description}</p>}
-                    <div className="task-meta">
-                      <span>{task.assignee?.name || 'Unassigned'}</span>
-                      {task.dueDate && <span>Due {task.dueDate}</span>}
-                    </div>
-                  </button>
-
-                  <div className="task-card-footer">
-                    <label className="status-select">
-                      <span className="sr-only">Move status</span>
-                      <select
-                        value={task.status}
-                        onChange={(e) => handleStatusChange(task, e.target.value)}
-                      >
-                        {TASK_STATUSES.map((status) => (
-                          <option key={status.key} value={status.key}>
-                            {status.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        className="btn danger compact"
-                        onClick={() => handleDelete(task)}
-                      >
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </article>
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  isAdmin={isAdmin}
+                  onEdit={openEditModal}
+                  onDelete={handleDelete}
+                  onStatusChange={handleStatusChange}
+                />
               ))}
               {tasksByStatus[column.key].length === 0 && (
-                <p className="muted small empty-column">No tasks</p>
+                <p className="muted small empty-column">Drop tasks here</p>
               )}
+            </KanbanColumn>
+          ))}
+        </section>
+
+        <DragOverlay>
+          {activeTask ? (
+            <div className="task-card drag-overlay-card">
+              <strong>{activeTask.title}</strong>
             </div>
-          </div>
-        ))}
-      </section>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       <section className="panel">
         <h2>Members</h2>
@@ -302,6 +330,9 @@ export default function TeamBoardPage() {
         onChange={setForm}
         onClose={closeModal}
         onSubmit={handleSubmit}
+        teamId={teamId}
+        taskId={editingTask?.id}
+        isAdmin={isAdmin}
       />
     </div>
   );

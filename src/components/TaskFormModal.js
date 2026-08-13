@@ -1,4 +1,5 @@
 import { TASK_STATUSES } from '../utils/taskForm';
+import TaskComments from './TaskComments';
 
 export default function TaskFormModal({
   open,
@@ -10,13 +11,16 @@ export default function TaskFormModal({
   onChange,
   onClose,
   onSubmit,
+  teamId,
+  taskId,
+  isAdmin,
 }) {
   if (!open) return null;
 
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <div
-        className="modal-panel"
+        className="modal-panel wide"
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-modal-title"
@@ -96,6 +100,10 @@ export default function TaskFormModal({
             {submitting ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Create task'}
           </button>
         </form>
+
+        {mode === 'edit' && taskId && (
+          <TaskComments teamId={teamId} taskId={taskId} isAdmin={isAdmin} />
+        )}
       </div>
     </div>
   );

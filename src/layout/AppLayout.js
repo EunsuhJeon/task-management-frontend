@@ -42,6 +42,12 @@ export default function AppLayout() {
           <NavLink to="/app" end className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}>
             Overview
           </NavLink>
+          <NavLink
+            to="/app/profile"
+            className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+          >
+            Profile
+          </NavLink>
 
           <p className="nav-label">Teams</p>
           {error && <p className="error-text">{error}</p>}
@@ -67,7 +73,7 @@ export default function AppLayout() {
           </div>
           <div className="topbar-actions">
             <span className="muted small">{user?.email}</span>
-            <button type="button" className="btn ghost" onClick={logout}>
+            <button type="button" className="btn ghost compact" onClick={logout}>
               Log out
             </button>
           </div>

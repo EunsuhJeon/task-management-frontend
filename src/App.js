@@ -3,10 +3,12 @@ import { AuthProvider } from './auth/AuthContext';
 import GuestRoute from './auth/GuestRoute';
 import ProtectedRoute from './auth/ProtectedRoute';
 import AppLayout from './layout/AppLayout';
+import InviteAcceptPage from './pages/InviteAcceptPage';
 import LoginPage from './pages/LoginPage';
 import OverviewPage from './pages/OverviewPage';
+import ProfilePage from './pages/ProfilePage';
 import SignupPage from './pages/SignupPage';
-import TeamPlaceholderPage from './pages/TeamPlaceholderPage';
+import TeamBoardPage from './pages/TeamBoardPage';
 import './App.css';
 
 function App() {
@@ -36,7 +38,9 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/app" element={<AppLayout />}>
               <Route index element={<OverviewPage />} />
-              <Route path="teams/:teamId" element={<TeamPlaceholderPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="teams/:teamId" element={<TeamBoardPage />} />
+              <Route path="invite/:token" element={<InviteAcceptPage />} />
             </Route>
           </Route>
 
